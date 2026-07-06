@@ -27,14 +27,25 @@ onUnmounted(() => {
 <template>
   <section id="center">
     <div class="hero">
-      <p class="eyebrow"><span lang="ja">七夕</span> <span class="eyebrow-sub">Tanabata · 7.7</span></p>
+      <p class="eyebrow">
+        <span lang="ja">七夕</span> <span class="eyebrow-sub">Tanabata · 7.7</span>
+      </p>
       <div class="hero-star">
-        <img :src="ohoshisama" class="star" width="150" height="150" alt="Ohoshisama, the Stor mascot" />
+        <img
+          :src="ohoshisama"
+          class="star"
+          width="150"
+          height="150"
+          alt="Ohoshisama, the Stor mascot"
+        />
       </div>
       <h1 class="wordmark">Stor</h1>
       <p class="tagline">an <b>S</b>-expression calcula<b>tor</b></p>
       <p class="expr" aria-label="Example: plus one times two three equals seven">
-        <span class="paren">(</span>+&nbsp;1&nbsp;<span class="paren">(</span>*&nbsp;2&nbsp;3<span class="paren">)</span><span class="paren">)</span>
+        <span class="paren">(</span>+&nbsp;1&nbsp;<span class="paren">(</span>*&nbsp;2&nbsp;3<span
+          class="paren"
+          >)</span
+        ><span class="paren">)</span>
         <span class="eq">=</span>
         <span class="result">7</span>
       </p>
@@ -61,11 +72,7 @@ onUnmounted(() => {
 
           <Teleport to="body">
             <Transition name="modal">
-              <div
-                v-if="showDocs"
-                class="modal-backdrop"
-                @click.self="showDocs = false"
-              >
+              <div v-if="showDocs" class="modal-backdrop" @click.self="showDocs = false">
                 <div
                   id="docs-tanzaku"
                   class="tanzaku"
@@ -73,14 +80,19 @@ onUnmounted(() => {
                   aria-modal="true"
                   aria-labelledby="docs-modal-title"
                 >
-                  <button type="button" class="modal-close" aria-label="Close" @click="showDocs = false">
+                  <button
+                    type="button"
+                    class="modal-close"
+                    aria-label="Close"
+                    @click="showDocs = false"
+                  >
                     &times;
                   </button>
                   <h2 id="docs-modal-title">What is Stor?</h2>
                   <p>
                     Stor is a calculator for s-expressions. Instead of typing
-                    <code>1 + 2 * 3</code>, you write expressions in prefix notation, with
-                    the operator first:
+                    <code>1 + 2 * 3</code>, you write expressions in prefix notation, with the
+                    operator first:
                   </p>
                   <p><code>(+ 1 (* 2 3))</code></p>
                   <p>Supported operators:</p>
@@ -127,7 +139,7 @@ onUnmounted(() => {
   <footer id="footer">
     <p class="footer-credit">
       <img :src="vueLogo" class="vue-badge" alt="Vue logo" />
-      written in Vue 3 · <span lang="ja">七月七日</span>
+      written in Vue 3 on <span lang="ja">七月七日</span>
     </p>
   </footer>
 </template>

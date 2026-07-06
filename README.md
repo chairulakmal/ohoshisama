@@ -1,4 +1,4 @@
-# STAR (S-Expression Calculator)
+# Ohoshisama STAR (S-Expression Calculator)
 
 Star is a Vue 3 + TypeScript calculator that parses and evaluates [s-expressions](https://en.wikipedia.org/wiki/S-expression), with a history of previously evaluated expressions.
 

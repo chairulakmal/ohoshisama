@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
+import StarCalculator from './components/StarCalculator.vue'
 </script>
 
 <template>
-  <HelloWorld />
+  <StarCalculator />
 </template>

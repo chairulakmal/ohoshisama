@@ -127,7 +127,7 @@ onUnmounted(() => {
   <footer id="footer">
     <p class="footer-credit">
       <img :src="vueLogo" class="vue-badge" alt="Vue logo" />
-      Written in Vue 3 · <span lang="ja">七月七日</span>
+      written in Vue 3 · <span lang="ja">七月七日</span>
     </p>
   </footer>
 </template>

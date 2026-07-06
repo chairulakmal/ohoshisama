@@ -1,14 +1,17 @@
-# Ohoshisama STOR (S-Expression Calculator)
+# Ohoshisama STOR
 
-Stor is a Vue 3 + TypeScript calculator that parses and evaluates [s-expressions](https://en.wikipedia.org/wiki/S-expression), with a history of previously evaluated expressions.
+Stor is a Vue 3 + TypeScript calculator that parses and evaluates s-expressions[^1] written in prefix notation, like `(+ 1 2)`, with a history of previously evaluated expressions.
 
-## Features
+[^1]: An S-expression (or symbolic expression, abbreviated as sexpr or sexp) is an expression in a like-named notation for nested list (tree-structured) data. See [Wikipedia](https://en.wikipedia.org/wiki/S-expression).
 
-- Input and evaluate s-expressions like `(* (+ 1 2) 3)`
-- Supports addition (`+`), subtraction (`-`), multiplication (`*`), division (`/`), exponentiation (`^`), and modulo (`%`)
-- Operators are prefix and binary (exactly two operands, which may themselves be nested expressions)
+## Design
+
+- Supports the binary operators `+` (add), `-` (subtract), `*` (multiply), `/` (divide), `^` (exponentiate), and `%` (modulo)
+- Each operand can itself be a nested s-expression instead of a number, e.g. `(* (+ 1 2) 3)` evaluates `(+ 1 2)` first, then multiplies the result by `3`
 - Evaluation history showing each expression alongside its result
 - Error handling for malformed input (unbalanced parentheses, invalid atoms, division by zero, etc.)
+- Assumption: the operator is always the first atom in an s-expression, followed by exactly two numbers
+- The s-expression engine (tokenizer → parser → evaluator) lives in `src/lib/` as plain TypeScript, independent of Vue, so it can be unit tested in isolation. Vue provides a thin UI on top: an input field, an evaluate action, and a history list.
 
 ## Getting Started
 
@@ -23,22 +26,12 @@ Build for production:
 npm run build
 ```
 
-Run tests:
+Run unit tests for the core engine:
 
 ```bash
 npm run test
 ```
 
-## Architecture
-
-The s-expression engine (tokenizer → parser → evaluator) lives in `src/lib/` as plain TypeScript, independent of Vue, so it can be unit tested in isolation. The Vue layer is a thin UI on top: an input field, an evaluate action, and a list rendering the history.
-
 ## Project Setup
 
-This project was generated with:
-
-```bash
-npm create vite@latest . -- --template vue-ts
-```
-
-This template uses Vue 3 `<script setup>` SFCs. See the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more, and the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup) for recommended project setup and IDE support.
+Generated with `npm create vite@latest . -- --template vue-ts`, using Vue 3 `<script setup>` SFCs. See the [Vue docs](https://vuejs.org/guide/typescript/overview.html#project-setup) for setup and IDE support.

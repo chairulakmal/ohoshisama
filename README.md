@@ -1,6 +1,6 @@
-# Ohoshisama STAR (S-Expression Calculator)
+# Ohoshisama STOR (S-Expression Calculator)
 
-Star is a Vue 3 + TypeScript calculator that parses and evaluates [s-expressions](https://en.wikipedia.org/wiki/S-expression), with a history of previously evaluated expressions.
+Stor is a Vue 3 + TypeScript calculator that parses and evaluates [s-expressions](https://en.wikipedia.org/wiki/S-expression), with a history of previously evaluated expressions.
 
 ## Features
 

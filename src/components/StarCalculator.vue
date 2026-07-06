@@ -20,7 +20,7 @@ import vueLogo from '../assets/vue.svg'
         <li>
           <a href="https://vite.dev/" target="_blank">
             <img class="logo" :src="ohoshisama" alt="" />
-            Explore Vite
+            Explore Stor
           </a>
         </li>
       </ul>

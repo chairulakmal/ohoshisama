@@ -91,10 +91,10 @@ onUnmounted(() => {
                   <h2 id="docs-modal-title">What is Stor?</h2>
                   <p>
                     Stor is a calculator for s-expressions. Instead of typing
-                    <code>1 + 2 * 3</code>, you write expressions in prefix notation, with the
+                    <code>1 + 2</code>, you write expressions in prefix notation, with the
                     operator first:
                   </p>
-                  <p><code>(+ 1 (* 2 3))</code></p>
+                  <p><code>(+ 1 2)</code></p>
                   <p>Supported operators:</p>
                   <ul class="docs-list">
                     <li><code>+</code> addition</li>

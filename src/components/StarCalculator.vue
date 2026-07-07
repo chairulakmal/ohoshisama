@@ -109,6 +109,10 @@ watch(expression, () => {
 })
 onMounted(resizeExprInput)
 
+// true while the box holds an example the user clicked but hasn't run or edited —
+// keeps a bare click-/tab-away (blur) from committing it to history on its own
+let exprFromExample = false
+
 function submitExpression() {
   evaluation.value = evaluateExpression(expression.value)
   const { result, error } = evaluation.value
@@ -118,8 +122,22 @@ function submitExpression() {
     return
   }
   setDuplicateSubmit(false)
+  exprFromExample = false
   const entry: HistoryEntry = { id: nextHistoryId++, expression: expression.value, result }
   history.value = [entry, ...history.value].slice(0, HISTORY_LIMIT)
+}
+
+// blur commits by default (type an expression, click away, see it saved) — but not
+// for an untouched example the user merely clicked; that enters history only via an
+// explicit Enter / Calculate, or once they've hand-edited it (see onExprInput)
+function handleBlur() {
+  if (exprFromExample) return
+  submitExpression()
+}
+
+// a hand-typed edit makes the box the user's own again, so a later blur may commit it
+function onExprInput() {
+  exprFromExample = false
 }
 
 function recallHistory(entry: HistoryEntry) {
@@ -130,11 +148,15 @@ function recallHistory(entry: HistoryEntry) {
   nextTick(resizeExprInput)
 }
 
-// load an example into the input and evaluate it — reuses the normal submit
-// path, so the run lands in history (which then replaces this examples panel)
+// load an example into the input and evaluate it inline, WITHOUT committing to
+// history — so a reviewer can click through every example (comparing each result
+// against its `expected`) while the panel stays put. Only an explicit submit
+// (Enter / Calculate / blur) commits and swaps this panel out for history.
 function runExample(expr: string) {
   expression.value = expr
-  submitExpression()
+  evaluation.value = evaluateExpression(expr)
+  exprFromExample = true
+  setDuplicateSubmit(false)
   nextTick(() => {
     resizeExprInput()
     exprInput.value?.focus()
@@ -203,8 +225,9 @@ onUnmounted(() => {
             aria-label="S-expression input"
             placeholder="(+ 1 2)"
             spellcheck="false"
+            @input="onExprInput"
             @keydown.enter.prevent="submitExpression"
-            @blur="submitExpression"
+            @blur="handleBlur"
           ></textarea>
           <span class="expr-output">
             <span class="eq">=</span>
@@ -235,7 +258,12 @@ onUnmounted(() => {
         <h2>Examples <span class="examples-hint">tap to run</span></h2>
         <ul class="examples-list" aria-label="Example expressions">
           <li v-for="ex in EXAMPLES" :key="ex.expr">
-            <button type="button" class="example-item" @click="runExample(ex.expr)">
+            <button
+              type="button"
+              class="example-item"
+              @mousedown.prevent
+              @click="runExample(ex.expr)"
+            >
               <code class="example-expr">{{ ex.expr }}</code>
               <span class="example-expected">= {{ ex.expected }}</span>
             </button>

@@ -24,11 +24,8 @@ export function parse(tokens: string[]): Node {
   return node
 }
 
-function nextToken(tokens: string[], cursor: { index: number }): string {
+function nextToken(tokens: string[], cursor: { index: number }): string | undefined {
   const token = tokens[cursor.index]
-  if (token === undefined) {
-    throw new Error('Unexpected end of input')
-  }
   cursor.index++
   return token
 }
@@ -69,19 +66,20 @@ function parseOperand(tokens: string[], cursor: { index: number }): Node {
   // consume valid operand (number)
   const operandToken = nextToken(tokens, cursor)
   const value = Number(operandToken)
-  if (Number.isNaN(value)) {
+  // check value is not NaN or Infinity
+  // also rejects Hex literal 0x, 0b/0o forms
+  if (
+    operandToken === undefined ||
+    !Number.isFinite(value) ||
+    /^[+-]?0[xXbBoo]/.test(operandToken)
+  ) {
     throw new Error(`Invalid number "${operandToken}"`)
   }
   return value
 }
 
-function calculate(node: Node): number {
-  if (typeof node === 'number') return node
-
-  const left = calculate(node.left)
-  const right = calculate(node.right)
-
-  switch (node.op) {
+function computeOp(op: Operator, left: number, right: number): number {
+  switch (op) {
     case '+':
       return left + right
     case '-':
@@ -97,6 +95,17 @@ function calculate(node: Node): number {
       if (right === 0) throw new Error('Modulo by zero')
       return left % right
   }
+}
+
+function calculate(node: Node): number {
+  if (typeof node === 'number') return node
+
+  const left = calculate(node.left)
+  const right = calculate(node.right)
+
+  const result = computeOp(node.op, left, right)
+  if (!Number.isFinite(result)) throw new Error('Result is not a finite number')
+  return result
 }
 
 export function evaluate(input: string): number {

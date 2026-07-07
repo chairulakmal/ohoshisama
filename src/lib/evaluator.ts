@@ -1,11 +1,11 @@
 // core calculator for s-expressions
 
-type Operator = '+' | '-' | '*' | '/' | '^' | '%'
-const OPERATORS: readonly Operator[] = ['+', '-', '*', '/', '^', '%']
+const OPERATORS = ['+', '-', '*', '/', '^', '%'] as const
+type Operator = (typeof OPERATORS)[number]
 type Node = number | { op: Operator; left: Node; right: Node }
 
-function isOperator(token: string): token is Operator {
-  return (OPERATORS as readonly string[]).includes(token)
+function isOperator(token: string | undefined): token is Operator {
+  return (OPERATORS as readonly string[]).includes(token as string)
 }
 
 export function tokenize(input: string): string[] {
@@ -24,6 +24,15 @@ export function parse(tokens: string[]): Node {
   return node
 }
 
+function nextToken(tokens: string[], cursor: { index: number }): string {
+  const token = tokens[cursor.index]
+  if (token === undefined) {
+    throw new Error('Unexpected end of input')
+  }
+  cursor.index++
+  return token
+}
+
 function parseExpression(tokens: string[], cursor: { index: number }): Node {
   const token = tokens[cursor.index]
 
@@ -31,21 +40,23 @@ function parseExpression(tokens: string[], cursor: { index: number }): Node {
     return parseOperand(tokens, cursor)
   }
 
-  cursor.index++ // consumes '('
+  // consumes '('
+  nextToken(tokens, cursor)
 
-  const opToken = tokens[cursor.index]
+  // consume operator
+  const opToken = nextToken(tokens, cursor)
   if (!isOperator(opToken)) {
     throw new Error(`Invalid operator "${opToken}"`)
   }
-  cursor.index++ // consume operator
 
   const left = parseOperand(tokens, cursor)
   const right = parseOperand(tokens, cursor)
 
-  if (tokens[cursor.index] !== ')') {
-    throw new Error(`Expected ")" but got "${tokens[cursor.index]}"`)
+  // consume ')'
+  const closeToken = nextToken(tokens, cursor)
+  if (closeToken !== ')') {
+    throw new Error(`Expected ")" but got "${closeToken}"`)
   }
-  cursor.index++ // consume ')'
 
   return { op: opToken, left, right }
 }
@@ -55,11 +66,12 @@ function parseOperand(tokens: string[], cursor: { index: number }): Node {
     return parseExpression(tokens, cursor)
   }
 
-  const value = Number(tokens[cursor.index])
+  // consume valid operand (number)
+  const operandToken = nextToken(tokens, cursor)
+  const value = Number(operandToken)
   if (Number.isNaN(value)) {
-    throw new Error(`Invalid number "${tokens[cursor.index]}"`)
+    throw new Error(`Invalid number "${operandToken}"`)
   }
-  cursor.index++ // consume valid operand (number)
   return value
 }
 

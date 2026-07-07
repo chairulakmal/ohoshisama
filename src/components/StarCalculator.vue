@@ -257,7 +257,7 @@ onUnmounted(() => {
             @click="showDocs = !showDocs"
           >
             <img class="logo" :src="ohoshisama" alt="" />
-            Explore Stor
+            How it works
           </button>
 
           <Teleport to="body">

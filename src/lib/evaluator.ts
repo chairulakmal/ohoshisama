@@ -19,7 +19,7 @@ export function tokenize(input: string): string[] {
 // the input must be exactly one expression — anything left over is an error
 export function parse(tokens: string[]): Node {
   if (tokens.length === 0) {
-    throw new Error('Please enter an expression, e.g. (+ 1 2)')
+    throw new Error('Empty expression — try (+ 1 2)')
   }
 
   // cursor is shared mutable state so recursive calls advance the same position
@@ -27,7 +27,7 @@ export function parse(tokens: string[]): Node {
   const node = parseExpression(tokens, cursor)
 
   if (cursor.index !== tokens.length) {
-    throw new Error(`Unexpected text "${tokens[cursor.index]}" after the expression`)
+    throw new Error(`Unexpected "${tokens[cursor.index]}" after the expression — enter just one`)
   }
   return node
 }
@@ -56,9 +56,9 @@ function parseExpression(tokens: string[], cursor: { index: number }): Node {
   const opToken = nextToken(tokens, cursor)
   if (!isOperator(opToken)) {
     if (opToken === undefined) {
-      throw new Error('Expected an operator after "(" but the expression ended')
+      throw new Error('Missing operator after "(" — use one of + - * / ^ %')
     }
-    throw new Error(`"${opToken}" is not a valid operator — use one of + - * / ^ %`)
+    throw new Error(`Invalid operator "${opToken}" — use one of + - * / ^ %`)
   }
 
   // exactly two operands — no unary or variadic forms
@@ -69,7 +69,7 @@ function parseExpression(tokens: string[], cursor: { index: number }): Node {
   const closeToken = nextToken(tokens, cursor)
   if (closeToken !== ')') {
     if (closeToken === undefined) {
-      throw new Error('Missing closing ")" — the expression ended before it was complete')
+      throw new Error('Missing ")" to close the expression')
     }
     throw new Error(
       `Expected ")" but found "${closeToken}" — each operator takes exactly two operands`
@@ -89,18 +89,16 @@ function parseOperand(tokens: string[], cursor: { index: number }): Node {
   const operandToken = nextToken(tokens, cursor)
   // a ")" or end of input here means the operand is missing
   if (operandToken === undefined || operandToken === ')') {
-    throw new Error('Missing operand — an operator needs exactly two operands')
+    throw new Error('Missing operand — each operator needs two operands')
   }
   // reject hex 0x, binary 0b, and octal 0o forms, which Number() would
   // otherwise accept — operands must be plain decimal
   if (/^[+-]?0[xXbBoO]/.test(operandToken)) {
-    throw new Error(
-      `"${operandToken}" is not a valid number — only plain decimal numbers are supported (no hex, binary, or octal)`
-    )
+    throw new Error(`Invalid number "${operandToken}" — use plain decimal (no 0x, 0b, 0o)`)
   }
   const value = Number(operandToken)
   if (!Number.isFinite(value)) {
-    throw new Error(`"${operandToken}" is not a valid number`)
+    throw new Error(`Invalid number "${operandToken}"`)
   }
   return value
 }
@@ -116,12 +114,12 @@ function computeOp(op: Operator, left: number, right: number): number {
     case '*':
       return left * right
     case '/':
-      if (right === 0) throw new Error("Can't divide by zero")
+      if (right === 0) throw new Error('Division by zero is undefined')
       return left / right
     case '^':
       return left ** right
     case '%':
-      if (right === 0) throw new Error("Can't divide by zero (modulo)")
+      if (right === 0) throw new Error('Division by zero is undefined')
       return left % right
   }
 }
@@ -137,9 +135,7 @@ function calculate(node: Node): number {
   // catches overflow to Infinity, e.g. (* 1e308 1e308), and undefined results
   // like NaN from (^ -1 0.5), rather than leaking them
   if (!Number.isFinite(result)) {
-    throw new Error(
-      'This calculation produced an invalid result (overflow or an undefined operation)'
-    )
+    throw new Error('Result is undefined or too large (overflow)')
   }
   return result
 }

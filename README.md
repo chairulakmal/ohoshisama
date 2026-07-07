@@ -2,7 +2,7 @@
 
 Stor is a Vue 3 + TypeScript calculator that parses and evaluates s-expressions[^1] written in prefix notation, like `(+ 1 2)`, with a history of previously evaluated expressions.
 
-[^1]: An S-expression (or symbolic expression, abbreviated as sexpr or sexp) is an expression in a like-named notation for nested list (tree-structured) data. See [Wikipedia](https://en.wikipedia.org/wiki/S-expression).
+[^1]: An S-expression (or symbolic expression) is an expression in a like-named notation for nested list (tree-structured) data. See [Wikipedia](https://en.wikipedia.org/wiki/S-expression).
 
 ## Design
 
@@ -29,7 +29,7 @@ npm run build
 Run unit tests for the core engine:
 
 ```bash
-npm run test
+npm test
 ```
 
 ## Project Setup

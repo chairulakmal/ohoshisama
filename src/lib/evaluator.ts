@@ -8,11 +8,11 @@ function isOperator(token: string): token is Operator {
   return (OPERATORS as readonly string[]).includes(token)
 }
 
-function tokenize(input: string): string[] {
+export function tokenize(input: string): string[] {
   return input.match(/[()]|[^\s()]+/g) ?? []
 }
 
-function parse(tokens: string[]): Node {
+export function parse(tokens: string[]): Node {
   // parser should throw error when the tokens item is not valid
   // parentheses () operators +_*?^% and operands; arity and unbalanced parens
   const cursor = { index: 0 }

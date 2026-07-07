@@ -9,6 +9,17 @@ const showDocs = ref(false)
 const expression = ref('(+ 1 (* 2 3))')
 const exprInput = ref<HTMLTextAreaElement | null>(null)
 
+// the spec's worked examples, shown in the docs modal as one-click runnable
+// checks — `expected` lets a reviewer verify the on-screen result at a glance
+const EXAMPLES: { expr: string; expected: string }[] = [
+  { expr: '(+ 1 2)', expected: '3' },
+  { expr: '(- 5 3.5)', expected: '1.5' },
+  { expr: '(/ (- 10 2) 4)', expected: '2' },
+  { expr: '(* (+ 1 2) 3)', expected: '9' },
+  { expr: '(+ (- 5 2) (* 3 7))', expected: '24' },
+  { expr: '(* (+ (^ 3 4) (% 11 3)) (/ (- 15 5) 2))', expected: '415' }
+]
+
 type HistoryEntry = { id: number; expression: string; result: number }
 
 const HISTORY_LIMIT = 8
@@ -71,6 +82,19 @@ const canSubmit = computed(() => !isEmpty.value)
 // history — not right after the save that put it there — so the hint reads
 // as "you tried to save this again" rather than firing on every fresh save
 const isDuplicateSubmit = ref(false)
+// auto-dismiss the duplicate hint so it doesn't linger indefinitely
+const DUPLICATE_HINT_MS = 4000
+let duplicateHintTimer: ReturnType<typeof setTimeout> | undefined
+
+function setDuplicateSubmit(value: boolean) {
+  clearTimeout(duplicateHintTimer)
+  isDuplicateSubmit.value = value
+  if (value) {
+    duplicateHintTimer = setTimeout(() => {
+      isDuplicateSubmit.value = false
+    }, DUPLICATE_HINT_MS)
+  }
+}
 
 function resizeExprInput() {
   const el = exprInput.value
@@ -80,7 +104,7 @@ function resizeExprInput() {
 }
 
 watch(expression, () => {
-  isDuplicateSubmit.value = false
+  setDuplicateSubmit(false)
   nextTick(resizeExprInput)
 })
 onMounted(resizeExprInput)
@@ -90,10 +114,10 @@ function submitExpression() {
   const { result, error } = evaluation.value
   if (error || result === null) return
   if (history.value[0]?.expression === expression.value) {
-    isDuplicateSubmit.value = true
+    setDuplicateSubmit(true)
     return
   }
-  isDuplicateSubmit.value = false
+  setDuplicateSubmit(false)
   const entry: HistoryEntry = { id: nextHistoryId++, expression: expression.value, result }
   history.value = [entry, ...history.value].slice(0, HISTORY_LIMIT)
 }
@@ -102,8 +126,19 @@ function recallHistory(entry: HistoryEntry) {
   expression.value = entry.expression
   // the entry's result is already known — show it without requiring a resubmit
   evaluation.value = { result: entry.result, error: null }
-  isDuplicateSubmit.value = false
+  setDuplicateSubmit(false)
   nextTick(resizeExprInput)
+}
+
+// load an example into the input and evaluate it — reuses the normal submit
+// path, so the run lands in history (which then replaces this examples panel)
+function runExample(expr: string) {
+  expression.value = expr
+  submitExpression()
+  nextTick(() => {
+    resizeExprInput()
+    exprInput.value?.focus()
+  })
 }
 
 const confirmingClear = ref(false)
@@ -137,6 +172,7 @@ watch(showDocs, (open) => {
 onUnmounted(() => {
   window.removeEventListener('keydown', closeOnEscape)
   document.body.style.overflow = ''
+  clearTimeout(duplicateHintTimer)
 })
 </script>
 
@@ -194,6 +230,17 @@ onUnmounted(() => {
             Already saved — this matches the last history entry
           </template>
         </p>
+      </div>
+      <div v-if="!history.length" class="examples-panel">
+        <h2>Examples <span class="examples-hint">tap to run</span></h2>
+        <ul class="examples-list" aria-label="Example expressions">
+          <li v-for="ex in EXAMPLES" :key="ex.expr">
+            <button type="button" class="example-item" @click="runExample(ex.expr)">
+              <code class="example-expr">{{ ex.expr }}</code>
+              <span class="example-expected">= {{ ex.expected }}</span>
+            </button>
+          </li>
+        </ul>
       </div>
       <div v-if="history.length" class="history-panel">
         <h2>

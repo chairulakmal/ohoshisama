@@ -776,6 +776,79 @@ code {
   }
 }
 
+.examples-panel {
+  width: 100%;
+  margin: 8px 0 0;
+  text-align: left;
+}
+
+.examples-panel h2 {
+  margin-bottom: 6px;
+}
+
+.examples-hint {
+  font: 500 0.7rem/1 var(--mono);
+  color: var(--muted);
+  opacity: 0.75;
+}
+
+.examples-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.example-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--muted);
+  font: 500 0.85rem/1.3 var(--mono);
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    border-color 0.2s,
+    color 0.2s,
+    background 0.2s;
+}
+
+.example-item:hover,
+.example-item:focus-visible {
+  border-color: var(--accent);
+  color: var(--text);
+  background: var(--accent-soft);
+}
+
+.example-item:focus-visible {
+  outline: none;
+}
+
+.example-expr {
+  background: none;
+  padding: 0;
+  color: inherit;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: break-word;
+  text-align: left;
+}
+
+.example-expected {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .modal-close {
   position: absolute;
   top: 14px;

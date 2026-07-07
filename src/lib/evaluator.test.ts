@@ -86,6 +86,19 @@ describe('parse', () => {
     parse(tokens)
     expect(tokens).toEqual(copy)
   })
+
+  // a pathologically deep input must fail with a clear message rather than
+  // exhausting the recursion stack with a raw RangeError
+  it('rejects expressions nested past the depth cap', () => {
+    const deep = (n: number): string => {
+      let s = '1'
+      for (let i = 0; i < n; i++) s = `(+ ${s} 1)`
+      return s
+    }
+    expect(() => parse(tokenize(deep(100000)))).toThrow(/nested too deeply/)
+    // a moderately deep but in-bounds expression still parses
+    expect(() => parse(tokenize(deep(500)))).not.toThrow()
+  })
 })
 
 describe('evaluate', () => {

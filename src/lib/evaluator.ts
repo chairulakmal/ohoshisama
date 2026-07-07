@@ -15,6 +15,11 @@ export function tokenize(input: string): string[] {
   return input.match(/[()]|[^\s()]+/g) ?? []
 }
 
+// cap on nesting depth so a pathologically deep input fails with a clear
+// message instead of blowing the recursion stack (a raw RangeError) here or in
+// calculate() — the tree it builds is walked with the same depth of recursion
+const MAX_DEPTH = 1000
+
 // grammar: expression = number | "(" operator expression expression ")"
 // the input must be exactly one expression — anything left over is an error
 export function parse(tokens: string[]): Node {
@@ -24,7 +29,7 @@ export function parse(tokens: string[]): Node {
 
   // cursor is shared mutable state so recursive calls advance the same position
   const cursor = { index: 0 }
-  const node = parseExpression(tokens, cursor)
+  const node = parseExpression(tokens, cursor, 0)
 
   if (cursor.index !== tokens.length) {
     throw new Error(`Unexpected "${tokens[cursor.index]}" after the expression — enter just one`)
@@ -40,13 +45,17 @@ function nextToken(tokens: string[], cursor: { index: number }): string | undefi
   return token
 }
 
-function parseExpression(tokens: string[], cursor: { index: number }): Node {
+function parseExpression(tokens: string[], cursor: { index: number }, depth: number): Node {
+  if (depth > MAX_DEPTH) {
+    throw new Error('Expression nested too deeply')
+  }
+
   // peek without consuming — parseOperand needs the token if this isn't a "("
   const token = tokens[cursor.index]
 
   // no "(" means a bare number, e.g. "42"
   if (token !== '(') {
-    return parseOperand(tokens, cursor)
+    return parseOperand(tokens, cursor, depth)
   }
 
   // consumes '('
@@ -62,8 +71,8 @@ function parseExpression(tokens: string[], cursor: { index: number }): Node {
   }
 
   // exactly two operands — no unary or variadic forms
-  const left = parseOperand(tokens, cursor)
-  const right = parseOperand(tokens, cursor)
+  const left = parseOperand(tokens, cursor, depth)
+  const right = parseOperand(tokens, cursor, depth)
 
   // consume ')' — a third operand or missing paren ends up here
   const closeToken = nextToken(tokens, cursor)
@@ -79,10 +88,11 @@ function parseExpression(tokens: string[], cursor: { index: number }): Node {
   return { op: opToken, left, right }
 }
 
-function parseOperand(tokens: string[], cursor: { index: number }): Node {
-  // an operand is either a nested expression or a plain number
+function parseOperand(tokens: string[], cursor: { index: number }, depth: number): Node {
+  // an operand is either a nested expression or a plain number — a nested
+  // expression is one level deeper, so the cap counts true nesting
   if (tokens[cursor.index] === '(') {
-    return parseExpression(tokens, cursor)
+    return parseExpression(tokens, cursor, depth + 1)
   }
 
   // consume valid operand (number)

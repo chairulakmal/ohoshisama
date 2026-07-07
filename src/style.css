@@ -150,7 +150,7 @@ code {
 
 .star {
   position: relative;
-  cursor: help;
+  cursor: crosshair;
   filter: drop-shadow(0 8px 22px rgba(254, 127, 45, 0.25));
 }
 
@@ -282,6 +282,12 @@ code {
   margin-bottom: 6px;
 }
 
+.history-count {
+  font: 500 0.7rem/1 var(--mono);
+  color: var(--muted);
+  opacity: 0.75;
+}
+
 .history-foot {
   display: flex;
   justify-content: flex-end;
@@ -329,7 +335,10 @@ code {
   font: 600 0.75rem/1 var(--mono);
   padding: 5px 9px;
   cursor: pointer;
-  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    color 0.2s,
+    background 0.2s;
 }
 
 .history-confirm-yes {

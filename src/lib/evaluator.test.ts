@@ -70,7 +70,7 @@ describe('parse', () => {
     ['a missing operator right after "("', '( 1 2)', /Invalid operator/],
     ['an unknown multi-character operator', '(** 2 3)', /Invalid operator/],
     ['a non-numeric operand', '(+ 1 foo)', /Invalid number "foo"/],
-    ['a missing operand', '(+ 1)', /Invalid number "\)"/],
+    ['a missing operand', '(+ 1)', /Missing operand/],
     ['empty input', '', /Please input your s-expression/],
     ['a missing closing parenthesis', '(+ 1 2', /Expected "\)"/],
     ['too many operands', '(+ 1 2 3)', /Expected "\)"/],
@@ -109,9 +109,8 @@ describe('evaluate', () => {
     expect(evaluate('(+ 0.1 0.2)')).toBeCloseTo(0.3)
   })
 
-  // Non-finite results and non-decimal operands should be rejected rather than
-  // leak Infinity/NaN or slip through Number()'s loose parsing. These fail until
-  // the source guards results and tightens operand validation.
+  // reject non-finite results and non-decimal literals instead of leaking
+  // Infinity/NaN or trusting Number()'s loose parsing
   it.each([
     ['division by zero', '(/ 1 0)'],
     ['modulo by zero', '(% 1 0)'],

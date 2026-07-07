@@ -69,14 +69,14 @@ function parseOperand(tokens: string[], cursor: { index: number }): Node {
 
   // consume valid operand (number)
   const operandToken = nextToken(tokens, cursor)
+  // a ")" or end of input here means the operand is missing
+  if (operandToken === undefined || operandToken === ')') {
+    throw new Error('Missing operand — an operator needs exactly two operands')
+  }
   const value = Number(operandToken)
   // check value is not NaN or Infinity
   // also rejects Hex literal 0x, 0b/0o forms
-  if (
-    operandToken === undefined ||
-    !Number.isFinite(value) ||
-    /^[+-]?0[xXbBoO]/.test(operandToken)
-  ) {
+  if (!Number.isFinite(value) || /^[+-]?0[xXbBoO]/.test(operandToken)) {
     throw new Error(`Invalid number "${operandToken}"`)
   }
   return value

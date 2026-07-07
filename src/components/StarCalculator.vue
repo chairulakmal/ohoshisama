@@ -7,7 +7,41 @@ import { evaluate } from '../lib/evaluator'
 const showDocs = ref(false)
 const expression = ref('(+ 1 (* 2 3))')
 const exprInput = ref<HTMLTextAreaElement | null>(null)
-const history = ref<{ expression: string; result: number }[]>([])
+
+type HistoryEntry = { id: number; expression: string; result: number }
+
+const HISTORY_LIMIT = 8
+const STORAGE_KEY = 'stor:history'
+
+function loadHistory(): HistoryEntry[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .filter(
+        (e): e is HistoryEntry =>
+          e != null &&
+          typeof e.id === 'number' &&
+          typeof e.expression === 'string' &&
+          typeof e.result === 'number',
+      )
+      .slice(0, HISTORY_LIMIT)
+  } catch {
+    return []
+  }
+}
+
+const history = ref<HistoryEntry[]>(loadHistory())
+// carry the id counter past whatever we restored so keys stay unique
+let nextHistoryId = history.value.reduce((max, e) => Math.max(max, e.id + 1), 0)
+
+watch(history, (entries) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries))
+  } catch {
+    // storage full or disabled — history just won't survive a reload
+  }
+})
 
 const evaluation = computed(() => {
   try {
@@ -40,12 +74,12 @@ const canSave = computed(() => {
 function commitToHistory() {
   const { result, error } = evaluation.value
   if (error || result === null) return
-  const entry = { expression: expression.value, result }
+  const entry: HistoryEntry = { id: nextHistoryId++, expression: expression.value, result }
   if (history.value[0]?.expression === entry.expression) return
-  history.value = [entry, ...history.value].slice(0, 8)
+  history.value = [entry, ...history.value].slice(0, HISTORY_LIMIT)
 }
 
-function recallHistory(entry: { expression: string; result: number }) {
+function recallHistory(entry: HistoryEntry) {
   expression.value = entry.expression
   nextTick(resizeExprInput)
 }
@@ -114,7 +148,9 @@ onUnmounted(() => {
             @keydown.enter.prevent="commitToHistory"
           ></textarea>
           <span class="eq">=</span>
-          <span v-if="!evaluation.error" class="result">{{ evaluation.result }}</span>
+          <span v-if="!evaluation.error" class="result" aria-live="polite">{{
+            evaluation.result
+          }}</span>
           <button
             type="button"
             class="save-btn"
@@ -126,14 +162,14 @@ onUnmounted(() => {
             Save
           </button>
         </p>
-        <p class="expr-note" :class="{ error: hasError }">
+        <p class="expr-note" :class="{ error: hasError }" aria-live="polite">
           <strong v-if="hasError">Error:</strong> {{ evaluation.error }}
         </p>
       </div>
       <div v-if="history.length" class="history-panel">
-        <h2>History</h2>
+        <h2>History <span class="history-count">last {{ HISTORY_LIMIT }}</span></h2>
         <ul class="history" aria-label="Expression history">
-          <li v-for="(entry, i) in history" :key="i">
+          <li v-for="entry in history" :key="entry.id">
             <button type="button" class="history-item" @click="recallHistory(entry)">
               <code class="history-expr">{{ entry.expression }}</code>
               <span class="history-result">{{ entry.result }}</span>

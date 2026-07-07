@@ -9,7 +9,7 @@ Stor is a Vue 3 + TypeScript calculator that parses and evaluates s-expressions[
 - Supports six binary operators: `+` (add), `-` (subtract), `*` (multiply), `/` (divide), `^` (exponentiate), and `%` (modulo)
 - Operands can themselves be nested s-expressions instead of plain numbers, e.g. `(* (+ 1 2) 3)` evaluates `(+ 1 2)` first, then multiplies the result by `3`
 - Every operator takes exactly two operands — no unary or variadic forms (e.g. `(- 5)` and `(+ 1 2 3)` are both invalid)
-- Keeps a history of evaluated expressions alongside their results
+- Keeps a history of evaluated expressions alongside their results, saved to `localStorage` so it survives a reload
 - Parsing validates the input and throws a descriptive error on unbalanced parentheses, unknown operators, non-numeric operands, or the wrong number of operands
 - Operands must be plain decimal numbers — hexadecimal (`0x`), binary (`0b`), and octal (`0o`) literals are rejected
 - The s-expression engine (tokenizer → parser → evaluator) lives in `src/lib/` as plain TypeScript, independent of Vue, so it can be unit tested in isolation. Vue provides a thin UI on top: an input field, an evaluate action, and a history list.

@@ -2,6 +2,8 @@
 
 Stor is a Vue 3 + TypeScript calculator that parses and evaluates s-expressions[^1] written in prefix notation, like `(+ 1 2)`, with a history of previously evaluated expressions.
 
+**Live demo: [ohoshisama.chairulakmal.com](https://ohoshisama.chairulakmal.com/)**
+
 ## Design
 
 - Six binary operators: `+` `-` `*` `/` `^` (exponentiate) `%` (modulo)
@@ -16,6 +18,7 @@ Stor is a Vue 3 + TypeScript calculator that parses and evaluates s-expressions[
 - Expression nesting is capped at 1000 levels deep, failing with a clear error instead of overflowing the call stack
 - Operands: integers, negatives, decimals (`.5`, `5.`), and scientific notation (`1e3`, `2e-1`). `0x`/`0b`/`0o` literals are rejected explicitly, since `Number()` would otherwise silently accept them
 - Whitespace-insensitive around parens and tokens
+- Lisp-style `;` line comments are stripped before tokenizing — s-expressions come from the Lisp family, where `;` comments are ubiquitous, so an example pasted with its annotation (`(+ 1 2) ; Expected result: 3`) still evaluates
 - Arithmetic runs in full double precision; only the _displayed_ result is rounded to 12 significant figures, so float noise like `(+ 0.1 0.2)` shows `0.3` instead of `0.30000000000000004`. Internal/history values stay unrounded. Very large or small magnitudes fall back to exponential notation
 - Div/mod by zero and other undefined results (e.g. negative base with fractional exponent) throw instead of returning `Infinity`/`NaN`
 - Evaluation happens on explicit submit — Enter, Calculate, or blur — rather than per keystroke, per NN/g's guidance against validating before the user finishes input[^2]. Blur commits to history like Enter/Calculate does, except for an untouched example, which only commits on explicit submit

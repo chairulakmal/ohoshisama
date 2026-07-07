@@ -12,7 +12,11 @@ function isOperator(token: string | undefined): token is Operator {
 // split into "(", ")", and runs of anything else between whitespace/parens,
 // so "(+ 1 2)" and "( +  1   2 )" tokenize the same
 export function tokenize(input: string): string[] {
-  return input.match(/[()]|[^\s()]+/g) ?? []
+  // strip ";" line comments first — s-expressions come from the Lisp family,
+  // where ";" comments to end of line are ubiquitous, so a snippet pasted from
+  // Lisp-styled sources like "(+ 1 2) ; Expected result: 3" still evaluates
+  const stripped = input.replace(/;[^\n]*/g, '')
+  return stripped.match(/[()]|[^\s()]+/g) ?? []
 }
 
 // cap on nesting depth so a pathologically deep input fails with a clear
@@ -129,7 +133,7 @@ function computeOp(op: Operator, left: number, right: number): number {
     case '^':
       return left ** right
     case '%':
-      if (right === 0) throw new Error('Division by zero is undefined')
+      if (right === 0) throw new Error('Modulo by zero is undefined')
       return left % right
   }
 }

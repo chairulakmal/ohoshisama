@@ -33,6 +33,17 @@ describe('tokenize', () => {
     ],
     ['empty input', '', []],
     ['whitespace-only input', '   ', []],
+    [
+      'a Lisp-style ";" comment after the expression',
+      '(+ 1 2) ; Expected result: 3',
+      ['(', '+', '1', '2', ')']
+    ],
+    [
+      'a ";" comment ending at the newline, not swallowing the next line',
+      '; sum\n(+ 1 ; one\n2)',
+      ['(', '+', '1', '2', ')']
+    ],
+    ['comment-only input', '; nothing here', []],
     ['empty parens', '()', ['(', ')']],
     ['doubled parens with no content', '(())', ['(', '(', ')', ')']],
     ['non-numeric operand tokens untouched', '(+ 1 abc)', ['(', '+', '1', 'abc', ')']]
@@ -114,7 +125,8 @@ describe('evaluate', () => {
     ['modulo with a negative dividend', '(% -7 3)', -1],
     ['modulo with a negative divisor', '(% 7 -3)', 1],
     ['a negative exponent', '(^ 2 -1)', 0.5],
-    ['zero to the zero power', '(^ 0 0)', 1]
+    ['zero to the zero power', '(^ 0 0)', 1],
+    ['an expression pasted with its Lisp-style comment', '(+ 1 2) ; Expected result: 3', 3]
   ])('evaluates %s', (_desc, input, expected) => {
     expect(evaluate(input)).toBe(expected)
   })

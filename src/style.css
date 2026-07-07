@@ -843,12 +843,6 @@ code {
   text-align: left;
 }
 
-.example-expected {
-  flex: 0 0 auto;
-  color: var(--accent);
-  font-weight: 700;
-}
-
 .modal-close {
   position: absolute;
   top: 14px;

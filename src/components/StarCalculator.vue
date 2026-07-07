@@ -10,14 +10,14 @@ const expression = ref('(+ 1 (* 2 3))')
 const exprInput = ref<HTMLTextAreaElement | null>(null)
 
 // the spec's worked examples, shown in the docs modal as one-click runnable
-// checks — `expected` lets a reviewer verify the on-screen result at a glance
-const EXAMPLES: { expr: string; expected: string }[] = [
-  { expr: '(+ 1 2)', expected: '3' },
-  { expr: '(- 5 3.5)', expected: '1.5' },
-  { expr: '(/ (- 10 2) 4)', expected: '2' },
-  { expr: '(* (+ 1 2) 3)', expected: '9' },
-  { expr: '(+ (- 5 2) (* 3 7))', expected: '24' },
-  { expr: '(* (+ (^ 3 4) (% 11 3)) (/ (- 15 5) 2))', expected: '415' }
+// expressions — running one evaluates it inline in the expr-output area
+const EXAMPLES: { expr: string }[] = [
+  { expr: '(+ 1 2)' },
+  { expr: '(- 5 3.5)' },
+  { expr: '(/ (- 10 2) 4)' },
+  { expr: '(* (+ 1 2) 3)' },
+  { expr: '(+ (- 5 2) (* 3 7))' },
+  { expr: '(* (+ (^ 3 4) (% 11 3)) (/ (- 15 5) 2))' }
 ]
 
 type HistoryEntry = { id: number; expression: string; result: number }
@@ -149,8 +149,8 @@ function recallHistory(entry: HistoryEntry) {
 }
 
 // load an example into the input and evaluate it inline, WITHOUT committing to
-// history — so a reviewer can click through every example (comparing each result
-// against its `expected`) while the panel stays put. Only an explicit submit
+// history — so a reviewer can click through every example and see its result in
+// the expr-output area while the panel stays put. Only an explicit submit
 // (Enter / Calculate / blur) commits and swaps this panel out for history.
 function runExample(expr: string) {
   expression.value = expr
@@ -265,7 +265,6 @@ onUnmounted(() => {
               @click="runExample(ex.expr)"
             >
               <code class="example-expr">{{ ex.expr }}</code>
-              <span class="example-expected">= {{ ex.expected }}</span>
             </button>
           </li>
         </ul>

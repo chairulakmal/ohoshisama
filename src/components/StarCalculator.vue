@@ -104,6 +104,10 @@ onUnmounted(() => {
                     <li><code>^</code> exponentiation</li>
                     <li><code>%</code> modulo</li>
                   </ul>
+                  <p>
+                    Operands must be plain decimal numbers — hexadecimal (<code>0x</code>), binary
+                    (<code>0b</code>), and octal (<code>0o</code>) literals are not accepted.
+                  </p>
                   <p>Expressions can be nested to any depth, for example:</p>
                   <p><code>(* (+ (^ 3 4) (% 11 3)) (/ (- 15 5) 2))</code></p>
                 </div>

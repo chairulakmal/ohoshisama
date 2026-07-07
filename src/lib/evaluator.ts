@@ -15,6 +15,10 @@ export function tokenize(input: string): string[] {
 export function parse(tokens: string[]): Node {
   // parser should throw error when the tokens item is not valid
   // parentheses () operators +_*?^% and operands; arity and unbalanced parens
+  if (tokens.length === 0) {
+    throw new Error('Please input your s-expression')
+  }
+
   const cursor = { index: 0 }
   const node = parseExpression(tokens, cursor)
 

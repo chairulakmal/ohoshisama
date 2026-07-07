@@ -71,7 +71,7 @@ describe('parse', () => {
     ['an unknown multi-character operator', '(** 2 3)', /Invalid operator/],
     ['a non-numeric operand', '(+ 1 foo)', /Invalid number "foo"/],
     ['a missing operand', '(+ 1)', /Invalid number "\)"/],
-    ['empty input', '', /Invalid number "undefined"/],
+    ['empty input', '', /Please input your s-expression/],
     ['a missing closing parenthesis', '(+ 1 2', /Expected "\)"/],
     ['too many operands', '(+ 1 2 3)', /Expected "\)"/],
     ['trailing tokens after a valid expression', '(+ 1 2) 3', /Unexpected trailing token/],

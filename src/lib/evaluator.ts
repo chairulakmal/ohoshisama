@@ -71,7 +71,7 @@ function parseOperand(tokens: string[], cursor: { index: number }): Node {
   if (
     operandToken === undefined ||
     !Number.isFinite(value) ||
-    /^[+-]?0[xXbBoo]/.test(operandToken)
+    /^[+-]?0[xXbBoO]/.test(operandToken)
   ) {
     throw new Error(`Invalid number "${operandToken}"`)
   }

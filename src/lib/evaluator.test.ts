@@ -119,6 +119,8 @@ describe('evaluate', () => {
     ['overflow', '(* 1e308 1e308)'],
     ['Infinity as an operand', '(+ Infinity 1)'],
     ['a hex literal operand', '(+ 0x10 1)'],
+    ['a binary literal operand', '(+ 0b10 1)'],
+    ['an octal literal operand', '(+ 0o10 1)'],
   ])('throws on %s', (_desc, input) => {
     expect(() => evaluate(input)).toThrow()
   })

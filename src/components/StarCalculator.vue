@@ -23,7 +23,7 @@ function loadHistory(): HistoryEntry[] {
           e != null &&
           typeof e.id === 'number' &&
           typeof e.expression === 'string' &&
-          typeof e.result === 'number',
+          typeof e.result === 'number'
       )
       .slice(0, HISTORY_LIMIT)
   } catch {
@@ -43,9 +43,27 @@ watch(history, (entries) => {
   }
 })
 
+// evaluate a debounced snapshot of the input so the preview doesn't
+// flash errors and reflow on every keystroke
+const EVAL_DEBOUNCE_MS = 500
+const debouncedExpression = ref(expression.value)
+let evalDebounceTimer: ReturnType<typeof setTimeout> | undefined
+
+watch(expression, (value) => {
+  clearTimeout(evalDebounceTimer)
+  evalDebounceTimer = setTimeout(() => {
+    debouncedExpression.value = value
+  }, EVAL_DEBOUNCE_MS)
+})
+
+function flushEvaluation() {
+  clearTimeout(evalDebounceTimer)
+  debouncedExpression.value = expression.value
+}
+
 const evaluation = computed(() => {
   try {
-    return { result: evaluate(expression.value), error: null }
+    return { result: evaluate(debouncedExpression.value), error: null }
   } catch (e) {
     return { result: null, error: e instanceof Error ? e.message : 'Invalid expression' }
   }
@@ -72,6 +90,8 @@ const canSave = computed(() => {
 })
 
 function commitToHistory() {
+  // evaluate what's in the field right now, not the debounced snapshot
+  flushEvaluation()
   const { result, error } = evaluation.value
   if (error || result === null) return
   const entry: HistoryEntry = { id: nextHistoryId++, expression: expression.value, result }
@@ -113,6 +133,7 @@ watch(showDocs, (open) => {
 })
 
 onUnmounted(() => {
+  clearTimeout(evalDebounceTimer)
   window.removeEventListener('keydown', closeOnEscape)
   document.body.style.overflow = ''
 })
@@ -147,27 +168,31 @@ onUnmounted(() => {
             spellcheck="false"
             @keydown.enter.prevent="commitToHistory"
           ></textarea>
-          <span class="eq">=</span>
-          <span v-if="!evaluation.error" class="result" aria-live="polite">{{
-            evaluation.result
-          }}</span>
-          <button
-            type="button"
-            class="save-btn"
-            :disabled="!canSave"
-            title="Save to history"
-            aria-label="Save to history"
-            @click="commitToHistory"
-          >
-            Save
-          </button>
+          <span class="expr-output">
+            <span class="eq">=</span>
+            <span v-if="!evaluation.error" class="result" aria-live="polite">{{
+              evaluation.result
+            }}</span>
+            <button
+              type="button"
+              class="save-btn"
+              :disabled="!canSave"
+              title="Save to history"
+              aria-label="Save to history"
+              @click="commitToHistory"
+            >
+              Save
+            </button>
+          </span>
         </p>
         <p class="expr-note" :class="{ error: hasError }" aria-live="polite">
           <strong v-if="hasError">Error:</strong> {{ evaluation.error }}
         </p>
       </div>
       <div v-if="history.length" class="history-panel">
-        <h2>History <span class="history-count">last {{ HISTORY_LIMIT }}</span></h2>
+        <h2>
+          History <span class="history-count">last {{ HISTORY_LIMIT }}</span>
+        </h2>
         <ul class="history" aria-label="Expression history">
           <li v-for="entry in history" :key="entry.id">
             <button type="button" class="history-item" @click="recallHistory(entry)">
@@ -306,3 +331,30 @@ onUnmounted(() => {
     </p>
   </footer>
 </template>
+
+<style scoped>
+/* stack the output under the input so the result's length never reflows the textarea */
+.expr {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.expr-output {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 44px minimum touch targets */
+.save-btn {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.history-clear {
+  width: 44px;
+  height: 44px;
+}
+</style>

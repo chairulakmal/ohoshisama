@@ -8,7 +8,7 @@ describe('spec examples', () => {
     ['(/ (- 10 2) 4)', 2],
     ['(* (+ 1 2) 3)', 9],
     ['(+ (- 5 2) (* 3 7))', 24],
-    ['(* (+ (^ 3 4) (% 11 3)) (/ (- 15 5) 2))', 415],
+    ['(* (+ (^ 3 4) (% 11 3)) (/ (- 15 5) 2))', 415]
   ])('evaluates %s', (input, expected) => {
     expect(evaluate(input)).toBe(expected)
   })
@@ -21,7 +21,7 @@ describe('tokenize', () => {
     [
       'irregular surrounding and inner whitespace',
       '  (   +  1    2 )  ',
-      ['(', '+', '1', '2', ')'],
+      ['(', '+', '1', '2', ')']
     ],
     ['tabs and newlines as separators', '(+\n1\t2)', ['(', '+', '1', '2', ')']],
     ['decimal and negative numbers as single tokens', '(- 5.5 -3)', ['(', '-', '5.5', '-3', ')']],
@@ -29,13 +29,13 @@ describe('tokenize', () => {
     [
       'leading- and trailing-dot numbers as single tokens',
       '(+ .5 5.)',
-      ['(', '+', '.5', '5.', ')'],
+      ['(', '+', '.5', '5.', ')']
     ],
     ['empty input', '', []],
     ['whitespace-only input', '   ', []],
     ['empty parens', '()', ['(', ')']],
     ['doubled parens with no content', '(())', ['(', '(', ')', ')']],
-    ['non-numeric operand tokens untouched', '(+ 1 abc)', ['(', '+', '1', 'abc', ')']],
+    ['non-numeric operand tokens untouched', '(+ 1 abc)', ['(', '+', '1', 'abc', ')']]
   ])('tokenizes %s', (_desc, input, expected) => {
     expect(tokenize(input)).toEqual(expected)
   })
@@ -49,18 +49,18 @@ describe('parse', () => {
     [
       'a left-nested expression',
       '(* (+ 1 2) 3)',
-      { op: '*', left: { op: '+', left: 1, right: 2 }, right: 3 },
+      { op: '*', left: { op: '+', left: 1, right: 2 }, right: 3 }
     ],
     [
       'a right-nested expression',
       '(+ 1 (* 2 3))',
-      { op: '+', left: 1, right: { op: '*', left: 2, right: 3 } },
+      { op: '+', left: 1, right: { op: '*', left: 2, right: 3 } }
     ],
     [
       'three levels of nesting',
       '(+ (- (* 2 3) 1) 4)',
-      { op: '+', left: { op: '-', left: { op: '*', left: 2, right: 3 }, right: 1 }, right: 4 },
-    ],
+      { op: '+', left: { op: '-', left: { op: '*', left: 2, right: 3 }, right: 1 }, right: 4 }
+    ]
   ])('parses %s', (_desc, input, expected) => {
     expect(parse(tokenize(input))).toStrictEqual(expected)
   })
@@ -74,7 +74,7 @@ describe('parse', () => {
     ['empty input', '', /Please input your s-expression/],
     ['a missing closing parenthesis', '(+ 1 2', /Expected "\)"/],
     ['too many operands', '(+ 1 2 3)', /Expected "\)"/],
-    ['trailing tokens after a valid expression', '(+ 1 2) 3', /Unexpected trailing token/],
+    ['trailing tokens after a valid expression', '(+ 1 2) 3', /Unexpected trailing token/]
   ])('throws on %s', (_desc, input, message) => {
     expect(() => parse(tokenize(input))).toThrow(message)
   })
@@ -100,7 +100,7 @@ describe('evaluate', () => {
     ['modulo with a negative dividend', '(% -7 3)', -1],
     ['modulo with a negative divisor', '(% 7 -3)', 1],
     ['a negative exponent', '(^ 2 -1)', 0.5],
-    ['zero to the zero power', '(^ 0 0)', 1],
+    ['zero to the zero power', '(^ 0 0)', 1]
   ])('evaluates %s', (_desc, input, expected) => {
     expect(evaluate(input)).toBe(expected)
   })
@@ -119,7 +119,7 @@ describe('evaluate', () => {
     ['Infinity as an operand', '(+ Infinity 1)'],
     ['a hex literal operand', '(+ 0x10 1)'],
     ['a binary literal operand', '(+ 0b10 1)'],
-    ['an octal literal operand', '(+ 0o10 1)'],
+    ['an octal literal operand', '(+ 0o10 1)']
   ])('throws on %s', (_desc, input) => {
     expect(() => evaluate(input)).toThrow()
   })

@@ -6,5 +6,5 @@ export default [
   { ignores: ['dist'] },
   ...pluginVue.configs['flat/essential'],
   ...vueTsEslintConfig({ extends: ['recommended'] }),
-  eslintConfigPrettier,
+  eslintConfigPrettier
 ]

@@ -66,15 +66,20 @@ describe('parse', () => {
   })
 
   it.each([
-    ['a symbolic invalid operator', '(& 1 2)', /Invalid operator/],
-    ['a missing operator right after "("', '( 1 2)', /Invalid operator/],
-    ['an unknown multi-character operator', '(** 2 3)', /Invalid operator/],
-    ['a non-numeric operand', '(+ 1 foo)', /Invalid number "foo"/],
+    ['a symbolic invalid operator', '(& 1 2)', /"&" is not a valid operator/],
+    ['a missing operator right after "("', '( 1 2)', /"1" is not a valid operator/],
+    ['an unknown multi-character operator', '(** 2 3)', /"\*\*" is not a valid operator/],
+    ['an operator missing entirely', '(', /Expected an operator after "\("/],
+    ['a non-numeric operand', '(+ 1 foo)', /"foo" is not a valid number/],
     ['a missing operand', '(+ 1)', /Missing operand/],
-    ['empty input', '', /Please input your s-expression/],
-    ['a missing closing parenthesis', '(+ 1 2', /Expected "\)"/],
-    ['too many operands', '(+ 1 2 3)', /Expected "\)"/],
-    ['trailing tokens after a valid expression', '(+ 1 2) 3', /Unexpected trailing token/]
+    ['empty input', '', /Please enter an expression/],
+    ['a missing closing parenthesis', '(+ 1 2', /Missing closing "\)"/],
+    ['too many operands', '(+ 1 2 3)', /Expected "\)" but found "3"/],
+    [
+      'trailing tokens after a valid expression',
+      '(+ 1 2) 3',
+      /Unexpected text "3" after the expression/
+    ]
   ])('throws on %s', (_desc, input, message) => {
     expect(() => parse(tokenize(input))).toThrow(message)
   })

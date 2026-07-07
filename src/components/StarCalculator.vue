@@ -3,6 +3,7 @@ import { ref, watch, nextTick, computed, onMounted, onUnmounted } from 'vue'
 import ohoshisama from '../assets/ohoshisama.svg'
 import vueLogo from '../assets/vue.svg'
 import { evaluate } from '../lib/evaluator'
+import { formatResult } from '../lib/format'
 
 const showDocs = ref(false)
 const expression = ref('(+ 1 (* 2 3))')
@@ -43,35 +44,33 @@ watch(history, (entries) => {
   }
 })
 
-// evaluate a debounced snapshot of the input so the preview doesn't
-// flash errors and reflow on every keystroke
-const EVAL_DEBOUNCE_MS = 500
-const debouncedExpression = ref(expression.value)
-let evalDebounceTimer: ReturnType<typeof setTimeout> | undefined
-
-watch(expression, (value) => {
-  clearTimeout(evalDebounceTimer)
-  evalDebounceTimer = setTimeout(() => {
-    debouncedExpression.value = value
-  }, EVAL_DEBOUNCE_MS)
-})
-
-function flushEvaluation() {
-  clearTimeout(evalDebounceTimer)
-  debouncedExpression.value = expression.value
-}
-
-const evaluation = computed(() => {
+function evaluateExpression(expr: string): { result: number | null; error: string | null } {
   try {
-    return { result: evaluate(debouncedExpression.value), error: null }
+    return { result: evaluate(expr), error: null }
   } catch (e) {
     return { result: null, error: e instanceof Error ? e.message : 'Invalid expression' }
   }
-})
+}
+
+// only (re)computed on explicit submit (Enter / the Calculate button), not on every
+// keystroke — validating partially-typed expressions as invalid reads as premature
+// and flickers the error message and layout on each character
+const evaluation = ref(evaluateExpression(expression.value))
+
+// full precision is kept in evaluation.result / history; only the displayed
+// string is rounded, so floating-point artifacts never surface to the user
+const displayResult = computed(() =>
+  evaluation.value.result === null ? '' : formatResult(evaluation.value.result)
+)
 
 // show a prompt when the field is empty
 const isEmpty = computed(() => expression.value.trim() === '')
 const hasError = computed(() => evaluation.value.error !== null && !isEmpty.value)
+const canSubmit = computed(() => !isEmpty.value)
+// only true right after a submit finds the expression already at the top of
+// history — not right after the save that put it there — so the hint reads
+// as "you tried to save this again" rather than firing on every fresh save
+const isDuplicateSubmit = ref(false)
 
 function resizeExprInput() {
   const el = exprInput.value
@@ -80,27 +79,30 @@ function resizeExprInput() {
   el.style.height = `${el.scrollHeight}px`
 }
 
-watch(expression, () => nextTick(resizeExprInput))
+watch(expression, () => {
+  isDuplicateSubmit.value = false
+  nextTick(resizeExprInput)
+})
 onMounted(resizeExprInput)
 
-const canSave = computed(() => {
-  const { result, error } = evaluation.value
-  if (error || result === null) return false
-  return history.value[0]?.expression !== expression.value
-})
-
-function commitToHistory() {
-  // evaluate what's in the field right now, not the debounced snapshot
-  flushEvaluation()
+function submitExpression() {
+  evaluation.value = evaluateExpression(expression.value)
   const { result, error } = evaluation.value
   if (error || result === null) return
+  if (history.value[0]?.expression === expression.value) {
+    isDuplicateSubmit.value = true
+    return
+  }
+  isDuplicateSubmit.value = false
   const entry: HistoryEntry = { id: nextHistoryId++, expression: expression.value, result }
-  if (history.value[0]?.expression === entry.expression) return
   history.value = [entry, ...history.value].slice(0, HISTORY_LIMIT)
 }
 
 function recallHistory(entry: HistoryEntry) {
   expression.value = entry.expression
+  // the entry's result is already known — show it without requiring a resubmit
+  evaluation.value = { result: entry.result, error: null }
+  isDuplicateSubmit.value = false
   nextTick(resizeExprInput)
 }
 
@@ -133,14 +135,13 @@ watch(showDocs, (open) => {
 })
 
 onUnmounted(() => {
-  clearTimeout(evalDebounceTimer)
   window.removeEventListener('keydown', closeOnEscape)
   document.body.style.overflow = ''
 })
 </script>
 
 <template>
-  <section id="center">
+  <section id="center" :class="{ 'has-history': history.length > 0 }">
     <div class="hero">
       <p class="eyebrow">
         <span lang="ja">七夕</span> <span class="eyebrow-sub">Tanabata · 7.7</span>
@@ -166,27 +167,32 @@ onUnmounted(() => {
             aria-label="S-expression input"
             placeholder="(+ 1 2)"
             spellcheck="false"
-            @keydown.enter.prevent="commitToHistory"
+            @keydown.enter.prevent="submitExpression"
+            @blur="submitExpression"
           ></textarea>
           <span class="expr-output">
             <span class="eq">=</span>
             <span v-if="!evaluation.error" class="result" aria-live="polite">{{
-              evaluation.result
+              displayResult
             }}</span>
             <button
               type="button"
-              class="save-btn"
-              :disabled="!canSave"
-              title="Save to history"
-              aria-label="Save to history"
-              @click="commitToHistory"
+              class="submit-btn"
+              :disabled="!canSubmit"
+              title="Calculate"
+              aria-label="Calculate"
+              @mousedown.prevent
+              @click="submitExpression"
             >
-              Save
+              Calculate
             </button>
           </span>
         </p>
         <p class="expr-note" :class="{ error: hasError }" aria-live="polite">
-          <strong v-if="hasError">Error:</strong> {{ evaluation.error }}
+          <template v-if="hasError"><strong>Error:</strong> {{ evaluation.error }}</template>
+          <template v-else-if="isDuplicateSubmit">
+            Already saved — this matches the last history entry
+          </template>
         </p>
       </div>
       <div v-if="history.length" class="history-panel">
@@ -197,7 +203,7 @@ onUnmounted(() => {
           <li v-for="entry in history" :key="entry.id">
             <button type="button" class="history-item" @click="recallHistory(entry)">
               <code class="history-expr">{{ entry.expression }}</code>
-              <span class="history-result">{{ entry.result }}</span>
+              <span class="history-result">{{ formatResult(entry.result) }}</span>
             </button>
           </li>
         </ul>
@@ -275,8 +281,8 @@ onUnmounted(() => {
                   <h2 id="docs-modal-title">What is Stor?</h2>
                   <p>
                     Stor is a calculator for s-expressions. Instead of typing
-                    <code>1 + 2</code>, you write expressions in prefix notation, with the operator
-                    first:
+                    <code class="nowrap">1 + 2</code>, you write expressions in prefix notation,
+                    with the operator first:
                   </p>
                   <p><code>(+ 1 2)</code></p>
                   <p>Supported operators:</p>
@@ -331,30 +337,3 @@ onUnmounted(() => {
     </p>
   </footer>
 </template>
-
-<style scoped>
-/* stack the output under the input so the result's length never reflows the textarea */
-.expr {
-  flex-direction: column;
-  align-items: stretch;
-}
-
-.expr-output {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-/* 44px minimum touch targets */
-.save-btn {
-  min-height: 44px;
-  min-width: 44px;
-}
-
-.history-clear {
-  width: 44px;
-  height: 44px;
-}
-</style>

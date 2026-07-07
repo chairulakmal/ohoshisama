@@ -90,6 +90,14 @@ code {
   padding: 2px 7px;
   color: var(--text);
   background: var(--code-bg);
+  white-space: nowrap;
+}
+
+/* opt a specific example out of the docs-modal `.tanzaku code` pre-wrap override
+   (same specificity + later in source, so it needs `.tanzaku` to win) — keeps the
+   example on a single line so it never breaks across the space characters */
+.tanzaku code.nowrap {
+  white-space: nowrap;
 }
 
 #app {
@@ -112,6 +120,13 @@ code {
   place-content: center;
   flex-grow: 1;
   padding: 48px 20px;
+}
+
+/* once there's history, anchor to the top instead of vertically centering —
+   centering re-measures on every render, so a growing/shrinking history list
+   would otherwise drag the input up and down the page as entries are added */
+#center.has-history {
+  justify-content: flex-start;
 }
 
 .hero {
@@ -191,6 +206,7 @@ code {
   margin: 8px 0 0;
 }
 
+/* stack the output under the input so the result's length never reflows the textarea */
 .expr {
   margin: 0;
   font: 500 clamp(1.1rem, 3.5vw, 1.4rem)/1.3 var(--mono);
@@ -199,10 +215,19 @@ code {
   border-radius: 10px;
   padding: 12px 20px;
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: stretch;
   gap: 8px;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+.expr-output {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .expr-input {
@@ -242,14 +267,18 @@ code {
   color: var(--accent);
   font-weight: 700;
   flex: 0 0 auto;
+  min-width: 4ch;
 }
 
 .expr .eq {
   color: var(--muted);
 }
 
-.save-btn {
+.submit-btn {
   flex: 0 0 auto;
+  /* 44px minimum touch target */
+  min-height: 44px;
+  min-width: 44px;
   font: 600 0.8rem/1 var(--mono);
   color: var(--accent);
   background: var(--accent-soft);
@@ -262,13 +291,13 @@ code {
     opacity 0.2s;
 }
 
-.save-btn:hover:not(:disabled),
-.save-btn:focus-visible {
+.submit-btn:hover:not(:disabled),
+.submit-btn:focus-visible {
   border-color: var(--accent);
   outline: none;
 }
 
-.save-btn:disabled {
+.submit-btn:disabled {
   color: var(--muted);
   background: none;
   cursor: default;
@@ -315,6 +344,9 @@ code {
 .history-clear {
   display: grid;
   place-items: center;
+  /* 44px minimum touch target */
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: 6px;
   background: none;
@@ -424,6 +456,11 @@ code {
   background: none;
   padding: 0;
   color: inherit;
+  /* let long recalled expressions wrap instead of overflowing the row:
+     override the global `code { white-space: nowrap }`, and allow the flex
+     child to shrink below its content width so break-word can take effect */
+  min-width: 0;
+  white-space: normal;
   overflow-wrap: break-word;
   text-align: left;
 }
@@ -685,6 +722,10 @@ code {
 
   code {
     color: var(--text);
+    /* the nested example is long enough to overflow the modal on a narrow
+       phone; let docs examples wrap rather than force horizontal scroll */
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
   }
 
   small {

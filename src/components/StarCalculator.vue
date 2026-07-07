@@ -372,9 +372,9 @@ onUnmounted(() => {
                   <p>Expressions can be nested, for example:</p>
                   <p><code>(* (+ (^ 3 4) (% 11 3)) (/ (- 15 5) 2))</code></p>
                   <small>
-                    Operands must be plain decimal numbers — scientific notation
-                    (<code>2e3</code>) is accepted, but hexadecimal (<code>0x</code>), binary
-                    (<code>0b</code>), and octal (<code>0o</code>) literals are not.
+                    Operands must be plain decimal numbers — scientific notation (<code>2e3</code>)
+                    is accepted, but hexadecimal (<code>0x</code>), binary (<code>0b</code>), and
+                    octal (<code>0o</code>) literals are not.
                   </small>
                 </div>
               </div>

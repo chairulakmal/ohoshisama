@@ -2,6 +2,9 @@
 
 const OPERATORS = ['+', '-', '*', '/', '^', '%'] as const
 type Operator = (typeof OPERATORS)[number]
+// the operator set as it appears in user-facing errors ("+ - * / ^ %"), derived
+// from OPERATORS so the two never drift apart
+const OPERATOR_LIST = OPERATORS.join(' ')
 // an expression tree: a leaf number or a binary operation on two subtrees
 type Node = number | { op: Operator; left: Node; right: Node }
 
@@ -69,9 +72,9 @@ function parseExpression(tokens: string[], cursor: { index: number }, depth: num
   const opToken = nextToken(tokens, cursor)
   if (!isOperator(opToken)) {
     if (opToken === undefined) {
-      throw new Error('Missing operator after "(" — use one of + - * / ^ %')
+      throw new Error(`Missing operator after "(" — use one of ${OPERATOR_LIST}`)
     }
-    throw new Error(`Invalid operator "${opToken}" — use one of + - * / ^ %`)
+    throw new Error(`Invalid operator "${opToken}" — use one of ${OPERATOR_LIST}`)
   }
 
   // exactly two operands — no unary or variadic forms

@@ -11,6 +11,7 @@ Stor is a Vue 3 + TypeScript calculator that parses and evaluates s-expressions[
 - Six binary operators: `+` `-` `*` `/` `^` (exponentiate) `%` (modulo)
 - Operands can be nested s-expressions, so `(* (+ 1 2) 3)` evaluates the inner sum first
 - Every operator takes exactly two operands. There are no unary or variadic forms, so `(- 5)` and `(+ 1 2 3)` are both invalid
+- `%` and `^` follow JavaScript's `%` and `**` semantics: `%` is a remainder whose sign follows the dividend (so `(% -7 3)` is `-1`, not the Euclidean `2`), and `^` allows fractional and negative exponents. A negative base with a fractional exponent is undefined (`NaN`) and is rejected rather than returned
 - Operands can be integers, negatives, decimals (`.5`, `5.`), or scientific notation (`1e3`, `2e-1`). Hex, binary, and octal literals (`0x`, `0b`, `0o`) are rejected on purpose, because `Number()` would otherwise accept them silently
 - Whitespace around parens and tokens doesn't matter
 - Lisp-style `;` line comments are stripped before tokenizing. S-expressions come from the Lisp family, where `;` comments are everywhere, so an example pasted with its annotation like `(+ 1 2) ; Expected result: 3` still evaluates
@@ -20,7 +21,7 @@ Stor is a Vue 3 + TypeScript calculator that parses and evaluates s-expressions[
 - The engine (tokenizer, parser, evaluator) is framework-free TypeScript in `src/lib/`, unit tested on its own. Vue is just the UI shell around it
 - The parsed expression tree is evaluated with a post-order depth-first traversal. Both operands are computed before their operator runs, so nested expressions reduce from the leaves up
 - Nesting is capped at 1000 levels deep. Past that it fails with a clear error instead of overflowing the call stack
-- Arithmetic runs in full double precision, and only the _displayed_ result is rounded to 12 significant figures. That way float noise like `(+ 0.1 0.2)` shows `0.3` instead of `0.30000000000000004`, while the values kept internally and in history stay unrounded. Very large or small magnitudes fall back to exponential notation
+- Arithmetic runs in full double precision, and only the _displayed_ result is rounded to 12 significant figures. That way float noise like `(+ 0.1 0.2)` shows `0.3` instead of `0.30000000000000004`, while the values kept internally and in history stay unrounded. Very large or small magnitudes fall back to exponential notation. A negative zero result (e.g. `(* -1 0)`) is displayed as `0`
 - Dividing or taking a modulo by zero, and other undefined results like a negative base with a fractional exponent, throw an error instead of returning `Infinity` or `NaN`
 
 ### Errors

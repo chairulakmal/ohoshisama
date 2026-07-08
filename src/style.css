@@ -319,20 +319,87 @@ code {
   color: var(--error);
 }
 
-.history-panel {
+/* The examples panel (shown when history is empty) and the history panel that
+   replaces it share their panel/list/row styling — kept as grouped selectors so
+   the two never drift. Rules unique to one panel (history's footer, clear
+   button, and per-row result) stay separate below. */
+.history-panel,
+.examples-panel {
   width: 100%;
   margin: 8px 0 0;
   text-align: left;
 }
 
-.history-panel h2 {
+.history-panel h2,
+.examples-panel h2 {
   margin-bottom: 6px;
 }
 
-.history-count {
+.history-count,
+.examples-hint {
   font: 500 0.7rem/1 var(--mono);
   color: var(--muted);
   opacity: 0.75;
+}
+
+.history,
+.examples-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.history-item,
+.example-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--muted);
+  font: 500 0.85rem/1.3 var(--mono);
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    border-color 0.2s,
+    color 0.2s,
+    background 0.2s;
+}
+
+.history-item:hover,
+.history-item:focus-visible,
+.example-item:hover,
+.example-item:focus-visible {
+  border-color: var(--accent);
+  color: var(--text);
+  background: var(--accent-soft);
+}
+
+.history-item:focus-visible,
+.example-item:focus-visible {
+  outline: none;
+}
+
+/* let long recalled expressions wrap instead of overflowing the row: override
+   the global `code { white-space: nowrap }`, and allow the flex child to shrink
+   below its content width so break-word can take effect */
+.history-expr,
+.example-expr {
+  background: none;
+  padding: 0;
+  color: inherit;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: break-word;
+  text-align: left;
 }
 
 .history-foot {
@@ -409,60 +476,6 @@ code {
   border-color: var(--accent);
   color: var(--text);
   outline: none;
-}
-
-.history {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-}
-
-.history-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: none;
-  color: var(--muted);
-  font: 500 0.85rem/1.3 var(--mono);
-  cursor: pointer;
-  box-sizing: border-box;
-  transition:
-    border-color 0.2s,
-    color 0.2s,
-    background 0.2s;
-}
-
-.history-item:hover,
-.history-item:focus-visible {
-  border-color: var(--accent);
-  color: var(--text);
-  background: var(--accent-soft);
-}
-
-.history-item:focus-visible {
-  outline: none;
-}
-
-.history-expr {
-  background: none;
-  padding: 0;
-  color: inherit;
-  /* let long recalled expressions wrap instead of overflowing the row:
-     override the global `code { white-space: nowrap }`, and allow the flex
-     child to shrink below its content width so break-word can take effect */
-  min-width: 0;
-  white-space: normal;
-  overflow-wrap: break-word;
-  text-align: left;
 }
 
 .history-result {
@@ -774,73 +787,6 @@ code {
   code {
     color: var(--accent);
   }
-}
-
-.examples-panel {
-  width: 100%;
-  margin: 8px 0 0;
-  text-align: left;
-}
-
-.examples-panel h2 {
-  margin-bottom: 6px;
-}
-
-.examples-hint {
-  font: 500 0.7rem/1 var(--mono);
-  color: var(--muted);
-  opacity: 0.75;
-}
-
-.examples-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-}
-
-.example-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: none;
-  color: var(--muted);
-  font: 500 0.85rem/1.3 var(--mono);
-  cursor: pointer;
-  box-sizing: border-box;
-  transition:
-    border-color 0.2s,
-    color 0.2s,
-    background 0.2s;
-}
-
-.example-item:hover,
-.example-item:focus-visible {
-  border-color: var(--accent);
-  color: var(--text);
-  background: var(--accent-soft);
-}
-
-.example-item:focus-visible {
-  outline: none;
-}
-
-.example-expr {
-  background: none;
-  padding: 0;
-  color: inherit;
-  min-width: 0;
-  white-space: normal;
-  overflow-wrap: break-word;
-  text-align: left;
 }
 
 .modal-close {

@@ -15,6 +15,7 @@ Stor is a Vue 3 + TypeScript calculator that parses and evaluates s-expressions[
 - Clearing history requires a confirm step
 - The examples panel (docs modal's worked examples, also shown inline once history is empty) loads and evaluates an example without committing it to history until it's resubmitted or hand-edited
 - Parser throws descriptive errors on unbalanced parens, unknown/missing operators, non-numeric operands, or wrong operand count
+- Errors quote the offending token (`Invalid number "foo"`) rather than reporting a character position — inputs are short one-liners in a single field, so the quoted token locates the problem on its own
 - Expression nesting is capped at 1000 levels deep, failing with a clear error instead of overflowing the call stack
 - Operands: integers, negatives, decimals (`.5`, `5.`), and scientific notation (`1e3`, `2e-1`). `0x`/`0b`/`0o` literals are rejected explicitly, since `Number()` would otherwise silently accept them
 - Whitespace-insensitive around parens and tokens
@@ -22,6 +23,7 @@ Stor is a Vue 3 + TypeScript calculator that parses and evaluates s-expressions[
 - Arithmetic runs in full double precision; only the _displayed_ result is rounded to 12 significant figures, so float noise like `(+ 0.1 0.2)` shows `0.3` instead of `0.30000000000000004`. Internal/history values stay unrounded. Very large or small magnitudes fall back to exponential notation
 - Div/mod by zero and other undefined results (e.g. negative base with fractional exponent) throw instead of returning `Infinity`/`NaN`
 - Evaluation happens on explicit submit — Enter, Calculate, or blur — rather than per keystroke, per NN/g's guidance against validating before the user finishes input[^2]. Blur commits to history like Enter/Calculate does, except for an untouched example, which only commits on explicit submit
+- The parsed expression tree is evaluated with a post-order depth-first traversal — both operands are computed before their operator is applied, so nested expressions reduce bottom-up from the leaves
 - Engine (tokenizer → parser → evaluator) is framework-free TypeScript in `src/lib/`, unit tested in isolation. Vue is just the UI shell around it.
 
 ## Getting Started

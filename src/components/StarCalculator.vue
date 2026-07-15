@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, computed, onMounted, onUnmounted } from 'vue'
+import { nextTick, ref } from 'vue'
 import ohoshisama from '../assets/ohoshisama.svg'
-import vueLogo from '../assets/vue.svg'
-import { evaluate } from '../lib/evaluator'
-import { formatResult } from '../lib/format'
+import CalculatorInput from './CalculatorInput.vue'
+import ExamplesPanel from './ExamplesPanel.vue'
+import HistoryPanel from './HistoryPanel.vue'
+import DocsSection from './DocsSection.vue'
+import SiteFooter from './SiteFooter.vue'
+import { useHistory, HISTORY_LIMIT } from '../composables/useHistory'
+import { useCalculator } from '../composables/useCalculator'
+import { useDocsModal } from '../composables/useDocsModal'
 
-const showDocs = ref(false)
-const expression = ref('(+ 1 (* 2 3))')
-const exprInput = ref<HTMLTextAreaElement | null>(null)
-
-// the spec's worked examples, shown in the docs modal as one-click runnable
-// expressions — running one evaluates it inline in the expr-output area
+// the spec's worked examples, shown when history is empty as one-click runnable
+// expressions — running one evaluates it inline without committing to history
 const EXAMPLES: { expr: string }[] = [
   { expr: '(+ 1 2)' },
   { expr: '(- 5 3.5)' },
@@ -20,182 +21,33 @@ const EXAMPLES: { expr: string }[] = [
   { expr: '(* (+ (^ 3 4) (% 11 3)) (/ (- 15 5) 2))' }
 ]
 
-type HistoryEntry = { id: number; expression: string; result: number }
+const { history, isTopEntry, addEntry, confirmingClear, requestClear, cancelClear, clear } =
+  useHistory()
 
-const HISTORY_LIMIT = 8
-const STORAGE_KEY = 'stor:history'
+const {
+  expression,
+  evaluation,
+  displayResult,
+  hasError,
+  canSubmit,
+  isDuplicateSubmit,
+  submit,
+  handleBlur,
+  onInput,
+  recall,
+  runExample
+} = useCalculator({ isTopEntry, addEntry })
 
-function loadHistory(): HistoryEntry[] {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
-    if (!Array.isArray(parsed)) return []
-    return parsed
-      .filter(
-        (e): e is HistoryEntry =>
-          e != null &&
-          typeof e.id === 'number' &&
-          typeof e.expression === 'string' &&
-          typeof e.result === 'number'
-      )
-      .slice(0, HISTORY_LIMIT)
-  } catch {
-    return []
-  }
+const { showDocs } = useDocsModal()
+
+const input = ref<InstanceType<typeof CalculatorInput> | null>(null)
+
+// loading an example refocuses the input so the user can edit or submit it right away;
+// wait a tick for CalculatorInput to render the new value before moving focus
+function onRunExample(expr: string) {
+  runExample(expr)
+  nextTick(() => input.value?.focus())
 }
-
-const history = ref<HistoryEntry[]>(loadHistory())
-// carry the id counter past whatever we restored so keys stay unique
-let nextHistoryId = history.value.reduce((max, e) => Math.max(max, e.id + 1), 0)
-
-watch(history, (entries) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries))
-  } catch {
-    // storage full or disabled — history just won't survive a reload
-  }
-})
-
-function evaluateExpression(expr: string): { result: number | null; error: string | null } {
-  try {
-    return { result: evaluate(expr), error: null }
-  } catch (e) {
-    return { result: null, error: e instanceof Error ? e.message : 'Invalid expression' }
-  }
-}
-
-// only (re)computed on explicit submit (Enter / the Calculate button), not on every
-// keystroke — validating partially-typed expressions as invalid reads as premature
-// and flickers the error message and layout on each character
-const evaluation = ref(evaluateExpression(expression.value))
-
-// full precision is kept in evaluation.result / history; only the displayed
-// string is rounded, so floating-point artifacts never surface to the user
-const displayResult = computed(() =>
-  evaluation.value.result === null ? '' : formatResult(evaluation.value.result)
-)
-
-// show a prompt when the field is empty
-const isEmpty = computed(() => expression.value.trim() === '')
-const hasError = computed(() => evaluation.value.error !== null && !isEmpty.value)
-const canSubmit = computed(() => !isEmpty.value)
-// only true right after a submit finds the expression already at the top of
-// history — not right after the save that put it there — so the hint reads
-// as "you tried to save this again" rather than firing on every fresh save
-const isDuplicateSubmit = ref(false)
-// auto-dismiss the duplicate hint so it doesn't linger indefinitely
-const DUPLICATE_HINT_MS = 4000
-let duplicateHintTimer: ReturnType<typeof setTimeout> | undefined
-
-function setDuplicateSubmit(value: boolean) {
-  clearTimeout(duplicateHintTimer)
-  isDuplicateSubmit.value = value
-  if (value) {
-    duplicateHintTimer = setTimeout(() => {
-      isDuplicateSubmit.value = false
-    }, DUPLICATE_HINT_MS)
-  }
-}
-
-function resizeExprInput() {
-  const el = exprInput.value
-  if (!el) return
-  el.style.height = 'auto'
-  el.style.height = `${el.scrollHeight}px`
-}
-
-watch(expression, () => {
-  setDuplicateSubmit(false)
-  nextTick(resizeExprInput)
-})
-onMounted(resizeExprInput)
-
-// true while the box holds an example the user clicked but hasn't run or edited —
-// keeps a bare click-/tab-away (blur) from committing it to history on its own
-let exprFromExample = false
-
-function submitExpression() {
-  evaluation.value = evaluateExpression(expression.value)
-  const { result, error } = evaluation.value
-  if (error || result === null) return
-  if (history.value[0]?.expression === expression.value) {
-    setDuplicateSubmit(true)
-    return
-  }
-  setDuplicateSubmit(false)
-  exprFromExample = false
-  const entry: HistoryEntry = { id: nextHistoryId++, expression: expression.value, result }
-  history.value = [entry, ...history.value].slice(0, HISTORY_LIMIT)
-}
-
-// blur commits by default (type an expression, click away, see it saved) — but not
-// for an untouched example the user merely clicked; that enters history only via an
-// explicit Enter / Calculate, or once they've hand-edited it (see onExprInput)
-function handleBlur() {
-  if (exprFromExample) return
-  submitExpression()
-}
-
-// a hand-typed edit makes the box the user's own again, so a later blur may commit it
-function onExprInput() {
-  exprFromExample = false
-}
-
-function recallHistory(entry: HistoryEntry) {
-  expression.value = entry.expression
-  // the entry's result is already known — show it without requiring a resubmit
-  evaluation.value = { result: entry.result, error: null }
-  setDuplicateSubmit(false)
-  nextTick(resizeExprInput)
-}
-
-// load an example into the input and evaluate it inline, WITHOUT committing to
-// history — so a reviewer can click through every example and see its result in
-// the expr-output area while the panel stays put. Only an explicit submit
-// (Enter / Calculate / blur) commits and swaps this panel out for history.
-function runExample(expr: string) {
-  expression.value = expr
-  evaluation.value = evaluateExpression(expr)
-  exprFromExample = true
-  setDuplicateSubmit(false)
-  nextTick(() => {
-    resizeExprInput()
-    exprInput.value?.focus()
-  })
-}
-
-const confirmingClear = ref(false)
-
-function requestClearHistory() {
-  confirmingClear.value = true
-}
-
-function cancelClearHistory() {
-  confirmingClear.value = false
-}
-
-function clearHistory() {
-  history.value = []
-  confirmingClear.value = false
-}
-
-function closeOnEscape(event: KeyboardEvent) {
-  if (event.key === 'Escape') showDocs.value = false
-}
-
-watch(showDocs, (open) => {
-  document.body.style.overflow = open ? 'hidden' : ''
-  if (open) {
-    window.addEventListener('keydown', closeOnEscape)
-  } else {
-    window.removeEventListener('keydown', closeOnEscape)
-  }
-})
-
-onUnmounted(() => {
-  window.removeEventListener('keydown', closeOnEscape)
-  document.body.style.overflow = ''
-  clearTimeout(duplicateHintTimer)
-})
 </script>
 
 <template>
@@ -215,173 +67,37 @@ onUnmounted(() => {
       </div>
       <h1 class="wordmark">Stor</h1>
       <p class="tagline">an <b>S</b>-expression calcula<b>tor</b></p>
-      <div class="expr-wrap">
-        <p class="expr">
-          <textarea
-            ref="exprInput"
-            v-model="expression"
-            class="expr-input"
-            rows="1"
-            aria-label="S-expression input"
-            placeholder="(+ 1 2)"
-            spellcheck="false"
-            @input="onExprInput"
-            @keydown.enter.prevent="submitExpression"
-            @blur="handleBlur"
-          ></textarea>
-          <span class="expr-output">
-            <span class="eq">=</span>
-            <span v-if="!evaluation.error" class="result" aria-live="polite">{{
-              displayResult
-            }}</span>
-            <button
-              type="button"
-              class="submit-btn"
-              :disabled="!canSubmit"
-              title="Calculate"
-              aria-label="Calculate"
-              @mousedown.prevent
-              @click="submitExpression"
-            >
-              Calculate
-            </button>
-          </span>
-        </p>
-        <p class="expr-note" :class="{ error: hasError }" aria-live="polite">
-          <template v-if="hasError"><strong>Error:</strong> {{ evaluation.error }}</template>
-          <template v-else-if="isDuplicateSubmit">
-            Already saved — this matches the last history entry
-          </template>
-        </p>
-      </div>
-      <div v-if="!history.length" class="examples-panel">
-        <h2>Examples <span class="examples-hint">tap to run</span></h2>
-        <ul class="examples-list" aria-label="Example expressions">
-          <li v-for="ex in EXAMPLES" :key="ex.expr">
-            <button
-              type="button"
-              class="example-item"
-              @mousedown.prevent
-              @click="runExample(ex.expr)"
-            >
-              <code class="example-expr">{{ ex.expr }}</code>
-            </button>
-          </li>
-        </ul>
-      </div>
-      <div v-if="history.length" class="history-panel">
-        <h2>
-          History <span class="history-count">last {{ HISTORY_LIMIT }}</span>
-        </h2>
-        <ul class="history" aria-label="Expression history">
-          <li v-for="entry in history" :key="entry.id">
-            <button type="button" class="history-item" @click="recallHistory(entry)">
-              <code class="history-expr">{{ entry.expression }}</code>
-              <span class="history-result">{{ formatResult(entry.result) }}</span>
-            </button>
-          </li>
-        </ul>
-        <div class="history-foot">
-          <p v-if="confirmingClear" class="history-confirm">
-            Clear history?
-            <button type="button" class="history-confirm-yes" @click="clearHistory">Yes</button>
-            <button type="button" class="history-confirm-no" @click="cancelClearHistory">
-              Cancel
-            </button>
-          </p>
-          <button
-            v-else
-            type="button"
-            class="history-clear"
-            title="Clear history"
-            aria-label="Clear history"
-            @click="requestClearHistory"
-          >
-            <svg
-              viewBox="0 0 20 20"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.35"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path
-                d="M4.5 6h11M8 6V4.5A1.5 1.5 0 0 1 9.5 3h1A1.5 1.5 0 0 1 12 4.5V6m2 0-.5 9.5A1.5 1.5 0 0 1 12 17H8a1.5 1.5 0 0 1-1.5-1.5L6 6"
-              />
-              <path d="M8.25 9v4.5M11.75 9v4.5" />
-            </svg>
-          </button>
-        </div>
-      </div>
+
+      <CalculatorInput
+        ref="input"
+        v-model="expression"
+        :result="displayResult"
+        :error="evaluation.error"
+        :has-error="hasError"
+        :can-submit="canSubmit"
+        :is-duplicate-submit="isDuplicateSubmit"
+        @submit="submit"
+        @blur="handleBlur"
+        @input="onInput"
+      />
+
+      <ExamplesPanel v-if="!history.length" :examples="EXAMPLES" @run="onRunExample" />
+
+      <HistoryPanel
+        v-else
+        :history="history"
+        :limit="HISTORY_LIMIT"
+        :confirming-clear="confirmingClear"
+        @recall="recall"
+        @request-clear="requestClear"
+        @confirm-clear="clear"
+        @cancel-clear="cancelClear"
+      />
     </div>
   </section>
 
   <section id="next-steps">
-    <div id="docs">
-      <h2>Docs <span class="jp" lang="ja">案内</span></h2>
-      <ul>
-        <li class="tanzaku-holder">
-          <button
-            type="button"
-            class="link-button"
-            :class="{ open: showDocs }"
-            :aria-expanded="showDocs"
-            aria-controls="docs-tanzaku"
-            @click="showDocs = !showDocs"
-          >
-            <img class="logo" :src="ohoshisama" alt="" />
-            How it works
-          </button>
-
-          <Teleport to="body">
-            <Transition name="modal">
-              <div v-if="showDocs" class="modal-backdrop" @click.self="showDocs = false">
-                <div
-                  id="docs-tanzaku"
-                  class="tanzaku"
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="docs-modal-title"
-                >
-                  <button
-                    type="button"
-                    class="modal-close"
-                    aria-label="Close"
-                    @click="showDocs = false"
-                  >
-                    &times;
-                  </button>
-                  <h2 id="docs-modal-title">What is Stor?</h2>
-                  <p>
-                    Stor is a calculator for s-expressions. Instead of typing
-                    <code class="nowrap">1 + 2</code>, you write expressions in prefix notation,
-                    with the operator first:
-                    <code class="nowrap">(+ 1 2)</code>
-                  </p>
-                  <p>Supported operators:</p>
-                  <ul class="docs-list">
-                    <li><code>+</code> addition</li>
-                    <li><code>-</code> subtraction</li>
-                    <li><code>*</code> multiplication</li>
-                    <li><code>/</code> division</li>
-                    <li><code>^</code> exponentiation</li>
-                    <li><code>%</code> modulo</li>
-                  </ul>
-                  <p>Expressions can be nested, for example:</p>
-                  <p><code>(* (+ (^ 3 4) (% 11 3)) (/ (- 15 5) 2))</code></p>
-                  <small>
-                    Operands must be plain decimal numbers — scientific notation (<code>2e3</code>)
-                    is accepted, but hexadecimal (<code>0x</code>), binary (<code>0b</code>), and
-                    octal (<code>0o</code>) literals are not.
-                  </small>
-                </div>
-              </div>
-            </Transition>
-          </Teleport>
-        </li>
-      </ul>
-    </div>
+    <DocsSection v-model:open="showDocs" />
     <div id="social">
       <h2>Source Code <span class="jp" lang="ja">短冊</span></h2>
       <ul>
@@ -405,10 +121,5 @@ onUnmounted(() => {
     </div>
   </section>
 
-  <footer id="footer">
-    <p class="footer-credit">
-      <img :src="vueLogo" class="vue-badge" alt="Vue logo" />
-      written in Vue 3 on <span lang="ja">七月七日</span>
-    </p>
-  </footer>
+  <SiteFooter />
 </template>
